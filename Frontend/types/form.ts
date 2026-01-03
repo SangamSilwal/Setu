@@ -69,3 +69,21 @@ export interface FormConfig {
 export interface FormData {
   [key: string]: string | string[]
 }
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  role: "user" | "admin"
+  isFirstTime: boolean
+  details?: {
+    nid?: string
+    age?: number
+    education?: string
+    salary?: string
+    disability?: { hasDisability: boolean; type?: string }
+    address?: { province: string; district: string; municipality: string; ward: string }
+  }
+}
+
+

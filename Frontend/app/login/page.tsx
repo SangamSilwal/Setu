@@ -1,9 +1,7 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,17 +10,49 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Navbar } from "@/components/layout/navbar"
 import { Footer } from "@/components/layout/footer"
 import Link from "next/link"
-import { Scale } from "lucide-react"
+import { Scale, AlertCircle } from "lucide-react" // Added AlertCircle icon
+import { Alert, AlertDescription } from "@/components/ui/alert" // Assuming you use shadcn Alert
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
-  const { login } = useAuth()
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null) // State for the error message
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    await login(email)
-    router.push("/dashboard")
+    setError(null) // Clear previous errors
+    setIsLoading(true)
+
+    const payload = { email, password }
+    console.log(payload)
+    console.log(JSON.stringify(payload))
+
+    try {
+      const response = await fetch("http://localhost:8000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      console.log(data)
+
+      if (response.ok) {
+        localStorage.setItem("access_token", data.access_token)
+        router.push("/dashboard")
+      } else {
+        // FastAPI returns error details in the 'detail' key
+        setError(data.detail || "Incorrect email or password")
+      }
+    } catch (err) {
+      setError("Server connection failed. Please try again later.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -41,25 +71,42 @@ export default function LoginPage() {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
+              
+              {/* --- ERROR MESSAGE DISPLAY --- */}
+              {error && (
+                <Alert variant="destructive" className="bg-red-50 text-red-900 border-red-200">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="name@example.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-4 pt-4">
-              <Button type="submit" className="w-full bg-primary">
-                Sign In
+              <Button type="submit" className="w-full bg-primary" disabled={isLoading}>
+                {isLoading ? "Signing In..." : "Sign In"}
               </Button>
               <p className="text-sm text-center text-muted-foreground">
                 Don&apos;t have an account?{" "}

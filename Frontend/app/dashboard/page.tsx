@@ -15,6 +15,10 @@ import { redirect } from "next/navigation"
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
 
+  console.log("Dashboard - isLoading:", isLoading);
+  console.log("Dashboard - user:", user);
+  console.log("Token in localStorage:", localStorage.getItem('access_token'));
+
   if (isLoading) return null
   if (!user) redirect("/login")
 

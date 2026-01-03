@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import NEPAL_DATA from "@/public/en.json"
 import { useState } from "react"
 import { useAuth } from "@/context/auth-context"
 import { useRouter } from "next/navigation"
@@ -48,34 +48,43 @@ export function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    console.log(formData)
+    
     try {
-      await login(formData.email)
-      await updateUserDetails({
-        nid: formData.nid,
-        age: Number.parseInt(formData.age),
-        education: formData.education,
-        salary: formData.salary,
-        disability: {
-          hasDisability: formData.hasDisability === "yes",
-          type: formData.disabilityType,
+      const response = await fetch("http://localhost:8000/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        address: {
-          province: formData.province,
-          district: formData.district,
-          municipality: formData.municipality,
-          ward: formData.ward,
-        },
+        body: JSON.stringify(formData),
       })
+
+      const data = await response.json()
+      console.log(data)
+
+      if (!response.ok  ) {
+        throw new Error(data.detail || "Registration failed")
+      }
+
+      localStorage.setItem("access_token",data.access_token)
+      if (login && data.access_token) {
+      await login(data.access_token)
+      }
+      if (updateUserDetails && data.user) {
+        await updateUserDetails(data.user)
+      }
       toast({
         title: "Registration Successful",
         description: "Welcome to Know Your Rights Nepal!",
       })
+      
       router.push("/dashboard")
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Something went wrong during registration.",
+        description: error.message || "Something went wrong during registration.",
       })
     }
   }
@@ -237,7 +246,7 @@ export function RegisterForm() {
                     id="province"
                     required
                     value={formData.province}
-                    onChange={handleInputChange}
+                    onChange={(e)=> setFormData({...formData,province:e.target.value,district:"",municipality:"",ward:""})}
                   />
                 </div>
                 <div className="space-y-2">
