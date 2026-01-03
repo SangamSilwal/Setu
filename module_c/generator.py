@@ -130,27 +130,44 @@ Missing Placeholders:
             "missing_fields": missing_fields
         }
 
-    def generate_from_description(self, description: str, additional_data: Dict[str, str] = None) -> Dict[str, Any]:
+    def generate_from_description(self, description: str, additional_data: Dict[str, str] = None, template_name: str = None) -> Dict[str, Any]:
         """
         RAG-Based Generation:
-        1. Retrieve relevant template based on description.
+        1. Retrieve relevant template based on description (OR use provided template_name).
         2. Use LLM to fill/adapt the retrieved template, incorporating additional data.
         """
         if not self.llm:
             raise RuntimeError("LLM required for smart generation.")
             
-        from .retriever import TemplateRetriever
+        best_template = None
+        retrieval_score = 1.0 # Default if manual selection
         
-        retriever = TemplateRetriever()
-        retrieved_templates = retriever.retrieve_templates(description, k=1)
-        
-        if not retrieved_templates:
-            return {
-                "success": False,
-                "error": "No relevant template found."
-            }
+        if template_name:
+            # Direct template usage
+            try:
+                content = self.loader.load_template(template_name)
+                best_template = {
+                    "filename": template_name,
+                    "content": content,
+                    "score": 1.0
+                }
+                logger.info(f"Using specified template: {template_name}")
+            except Exception as e:
+                return {"success": False, "error": f"Template '{template_name}' not found: {e}"}
+        else:
+            # RAG Retrieval
+            from .retriever import TemplateRetriever
+            retriever = TemplateRetriever()
+            retrieved_templates = retriever.retrieve_templates(description, k=1)
             
-        best_template = retrieved_templates[0]
+            if not retrieved_templates:
+                return {
+                    "success": False,
+                    "error": "No relevant template found."
+                }
+            best_template = retrieved_templates[0]
+            retrieval_score = best_template['score']
+            
         template_content = best_template['content']
         template_name = best_template['filename']
         
@@ -186,5 +203,5 @@ Final Letter:
             "success": True,
             "letter": generated_letter,
             "template_used": template_name,
-            "retrieval_score": best_template['score']
+            "retrieval_score": retrieval_score
         }
