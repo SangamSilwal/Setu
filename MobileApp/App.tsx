@@ -1,0 +1,28 @@
+import React from 'react';
+import { SafeAreaView, StatusBar, StyleSheet, Platform } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+export default function App() {
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <WebView
+        source={{ uri: 'https://setu-flax-mu.vercel.app/' }}
+        style={styles.webview}
+        startInLoadingState={true}
+        allowsBackForwardNavigationGestures={true}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+  webview: {
+    flex: 1,
+  },
+});
